@@ -1,6 +1,8 @@
 package com.ekka.broker.assets;
 
+import com.ekka.broker.AbstractRestApiTest;
 import com.ekka.broker.MainVerticle;
+import com.ekka.broker.config.ConfigLoader;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -15,17 +17,13 @@ import org.slf4j.LoggerFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(VertxExtension.class)
-public class TestAssetsRestApi {
+public class TestAssetsRestApi extends AbstractRestApiTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(TestAssetsRestApi.class);
-  @BeforeEach
-  void deploy_verticle(Vertx vertx, VertxTestContext context) {
-    vertx.deployVerticle(new MainVerticle(), context.succeeding(id -> context.completeNow()));
-  }
 
   @Test
   void returns_all_assets(Vertx vertx, VertxTestContext context) throws Throwable {
-    var client = WebClient.create(vertx, new WebClientOptions().setDefaultPort(MainVerticle.PORT));
+    var client = webClient(vertx);
     client.get("/assets")
       .send()
       .onComplete(context.succeeding(response -> {
@@ -36,4 +34,9 @@ public class TestAssetsRestApi {
         context.completeNow();
       }));
   }
+
+  private static WebClient webClient(Vertx vertx) {
+    return WebClient.create(vertx, new WebClientOptions().setDefaultPort(TEST_SERVER_PORT));
+  }
+
 }

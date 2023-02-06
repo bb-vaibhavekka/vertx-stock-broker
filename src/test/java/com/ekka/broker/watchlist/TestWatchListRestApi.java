@@ -1,5 +1,6 @@
 package com.ekka.broker.watchlist;
 
+import com.ekka.broker.AbstractRestApiTest;
 import com.ekka.broker.MainVerticle;
 import com.ekka.broker.assets.Asset;
 import io.vertx.core.Future;
@@ -21,17 +22,14 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(VertxExtension.class)
-public class TestWatchListRestApi {
+public class TestWatchListRestApi extends AbstractRestApiTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(TestWatchListRestApi.class);
-  @BeforeEach
-  void deploy_verticle(Vertx vertx, VertxTestContext context) {
-    vertx.deployVerticle(new MainVerticle(), context.succeeding(id -> context.completeNow()));
-  }
+
 
   @Test
   void adds_and_returns_watchlist_for_account(Vertx vertx, VertxTestContext context) throws Throwable {
-    var client = WebClient.create(vertx, new WebClientOptions().setDefaultPort(MainVerticle.PORT));
+    var client = webClient(vertx);
     var accountId = UUID.randomUUID();
     client.put("/account/watchlist/" + accountId.toString())
       .sendJsonObject(body())
@@ -57,7 +55,7 @@ public class TestWatchListRestApi {
 
   @Test
   void adds_and_deletes_watchlist_for_account(Vertx vertx, VertxTestContext context){
-    var client = WebClient.create(vertx, new WebClientOptions().setDefaultPort(MainVerticle.PORT));
+    var client = webClient(vertx);
     var accountId = UUID.randomUUID();
     client.put("/account/watchlist/" + accountId.toString())
       .sendJsonObject(body())
@@ -86,6 +84,10 @@ public class TestWatchListRestApi {
       new Asset("AMZN"),
       new Asset("TSLA"))
     ).toJsonObject();
+  }
+
+  private static WebClient webClient(Vertx vertx) {
+    return WebClient.create(vertx, new WebClientOptions().setDefaultPort(TEST_SERVER_PORT));
   }
 
 }

@@ -1,6 +1,9 @@
 package com.ekka.broker;
 
 import com.ekka.broker.assets.AssetsRestApi;
+import com.ekka.broker.config.BrokerConfig;
+import com.ekka.broker.config.ConfigLoader;
+import com.ekka.broker.db.DBPools;
 import com.ekka.broker.quotes.QuotesRestApi;
 import com.ekka.broker.watchlist.WatchListRestApi;
 import io.vertx.core.AbstractVerticle;
@@ -10,6 +13,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,42 +25,53 @@ public class RestApiVerticle extends AbstractVerticle {
   private static final Logger LOG = LoggerFactory.getLogger(RestApiVerticle.class);
 
   @Override
-  public void start(Promise<Void> startPromise) throws Exception {
-    startHttpServerAndAttachRoutes(startPromise);
+  public void start(final Promise<Void> startPromise) throws Exception {
+    ConfigLoader.load(vertx)
+      .onFailure(startPromise::fail)
+      .onSuccess(configuration -> {
+        LOG.info("Retrieved Configuration: {}", configuration);
+        startHttpServerAndAttachRoutes(startPromise, configuration);
+      });
   }
 
-  private void startHttpServerAndAttachRoutes(Promise<Void> startPromise) {
+  private void startHttpServerAndAttachRoutes(final Promise<Void> startPromise,
+                                              final BrokerConfig configuration) {
+    // One pool for each Rest Api Verticle
+//    final Pool db = DBPools.createPgPool(configuration, vertx);
+    // Alternatively use MySQL
+     final Pool db = DBPools.createMySQLPool(configuration, vertx);
+
     final Router restApi = Router.router(vertx);
     restApi.route()
       .handler(BodyHandler.create())
-      .failureHandler(handlefailure());
-    AssetsRestApi.attach(restApi);
-    QuotesRestApi.attach(restApi);
-    WatchListRestApi.attach(restApi);
+      .failureHandler(handleFailure());
+    AssetsRestApi.attach(restApi, db);
+    QuotesRestApi.attach(restApi, db);
+    WatchListRestApi.attach(restApi, db);
 
     vertx.createHttpServer()
       .requestHandler(restApi)
-      .exceptionHandler(error -> LOG.error("HTTP Server error: ",error))
-      .listen(MainVerticle.PORT, http -> {
+      .exceptionHandler(error -> LOG.error("HTTP Server error: ", error))
+      .listen(configuration.getServerPort(), http -> {
         if (http.succeeded()) {
           startPromise.complete();
-          LOG.info("HTTP server started on port 8888");
+          LOG.info("HTTP server started on port {}", configuration.getServerPort());
         } else {
           startPromise.fail(http.cause());
         }
       });
   }
 
-  private static Handler<RoutingContext> handlefailure() {
+  private Handler<RoutingContext> handleFailure() {
     return errorContext -> {
       if (errorContext.response().ended()) {
-        //ignore - completed response
+        // Ignore completed response
         return;
       }
       LOG.error("Route Error:", errorContext.failure());
       errorContext.response()
         .setStatusCode(500)
-        .end(new JsonObject().put("message", "Something went Wrong:(").toBuffer());
+        .end(new JsonObject().put("message", "Something went wrong :(").toBuffer());
     };
   }
 

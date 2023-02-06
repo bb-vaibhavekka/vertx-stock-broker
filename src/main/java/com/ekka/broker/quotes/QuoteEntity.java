@@ -1,18 +1,19 @@
 package com.ekka.broker.quotes;
 
 import com.ekka.broker.assets.Asset;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.vertx.core.json.JsonObject;
-import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Value
-@Builder
-public class Quote {
-  Asset asset;
+@Data
+public class QuoteEntity {
+
+  String asset;
   BigDecimal bid;
   BigDecimal ask;
+  @JsonProperty("last_price")
   BigDecimal lastPrice;
   BigDecimal volume;
 
@@ -20,4 +21,5 @@ public class Quote {
 
     return JsonObject.mapFrom(this); //converting current Quote object to Json Object
   }
+
 }

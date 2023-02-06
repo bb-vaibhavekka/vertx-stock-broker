@@ -1,0 +1,13 @@
+PUT http://localhost:8888/pg/account/100
+Content-Type : application/json
+
+{
+  "asset" : [
+  {
+    "name" : "AMZN"
+  },
+  {
+      "name" : "TSLA"
+  }
+ ]
+}

@@ -9,9 +9,9 @@
   <logger name="com.danielprinz.udemy" level="debug"/>
   <logger name="io.netty" level="warn"/>
   <logger name="io.vertx" level="info"/>
-  <logger name="org.flywaydb.core" level="info"/>
+  <logger name="org.flywaydb.core" level="debug"/>
 
-  <root level="INFO">
+  <root level="DEBUG">
     <appender-ref ref="STDOUT"/>
   </root>
 
